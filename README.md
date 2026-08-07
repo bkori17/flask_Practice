@@ -1,134 +1,348 @@
-# Student Registration System
+# Flask Student Registration System – CI/CD Pipeline using GitHub Actions
 
-A simple **Flask** web application to manage student records with **MongoDB** as the backend database. Users can **add, view, update, and delete** student details.
+## Project Overview
 
----
+This project demonstrates a complete Continuous Integration and Continuous Deployment (CI/CD) pipeline for a Flask-based Student Registration application.
 
-## Features
+The application is containerized using Docker, stored in Amazon Elastic Container Registry (ECR), and automatically deployed to an Amazon EC2 instance using GitHub Actions.
 
-* List all students on the home page
-* Add a new student
-* Update existing student details
-* Delete a student with confirmation
-* Simple and responsive UI using Bootstrap
+MongoDB Atlas is used as the backend database, and every deployment is verified through a health check endpoint. Email notifications are sent for both successful and failed pipeline executions.
 
 ---
 
-## Tech Stack
+## Technology Stack
 
-* **Backend:** Python, Flask
-* **Database:** MongoDB (via Flask-PyMongo)
-* **Frontend:** HTML, Jinja2 templates, Bootstrap 5
-* **Environment Variables:** Managed via `.env` file
-
----
-
-## Setup Instructions
-
-### 1. Clone the repository
-
-```bash
-git clone <your-repo-url>
-cd <repo-folder>
-```
-
-### 2. Create and activate a virtual environment
-
-```bash
-python -m venv venv
-# Activate venv
-# Windows:
-venv\Scripts\activate
-# Linux / Mac:
-source venv/bin/activate
-```
-
-### 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-**`requirements.txt` example:**
-
-```
-Flask
-Flask-PyMongo
-python-dotenv
-bson
-```
-
-### 4. Configure environment variables
-
-Create a `.env` file in the project root:
-
-```
-MONGO_URI=<your-mongodb-connection-string>
-SECRET_KEY=<your-secret-key>
-```
-
-### 5. Run the application
-
-```bash
-python app.py
-```
-
-Open your browser at: [http://localhost:8000](http://localhost:8000)
+- Python 3.12
+- Flask
+- MongoDB Atlas
+- Docker
+- GitHub Actions
+- Amazon ECR
+- Amazon EC2
+- Pytest
+- Gmail SMTP (Email Notifications)
 
 ---
 
 ## Project Structure
 
 ```
-project/
+flask_Practice/
+│
+├── .github/
+│   └── workflows/
+│       └── ci-cd.yml
 │
 ├── templates/
-│   ├── base.html
-│   ├── index.html
-│   ├── add_student.html
-│   ├── update_student.html
-│
+├── Dockerfile
 ├── app.py
 ├── requirements.txt
-└── .env
+├── test_app.py
+├── README.md
+└── start_flask.sh
 ```
 
 ---
 
-## Screenshots
+## CI/CD Workflow
 
-**Home Page**
-Lists all students with Edit/Delete buttons.
-- <img width="1902" height="607" alt="image" src="https://github.com/user-attachments/assets/a58a6a6d-4978-4769-8074-232e4d31e69d" />
+The pipeline is automatically triggered whenever code is pushed to the **main** branch. It can also be executed manually using the GitHub Actions **Run Workflow** option.
 
+The pipeline performs the following steps:
 
-**Add Student**
-Form to add a new student.
-- <img width="1897" height="801" alt="image" src="https://github.com/user-attachments/assets/d65d25c3-ebb5-410a-adb1-e130ad7c5878" />
-
-
-**Update Student**
-Form pre-filled with student details.
-- <img width="1905" height="897" alt="image" src="https://github.com/user-attachments/assets/04febf01-879f-431f-ab07-abcfb993acf1" />
-
-
-
----
-
-## Notes
-
-* Make sure MongoDB is running and accessible via the URI in `.env`
-* Delete action includes a confirmation page to prevent accidental deletion
-* Uses `ObjectId` from `bson` to work with MongoDB document IDs
-* If you use MongoDB Atlas on macOS, install dependencies again (`pip install -r requirements.txt`). This project now uses `certifi` CA bundle explicitly to avoid common TLS certificate verification failures with `pymongo`.
+1. Checkout source code
+2. Configure Python
+3. Install project dependencies
+4. Execute Pytest test cases
+5. Configure AWS credentials
+6. Login to Amazon ECR
+7. Build Docker image
+8. Tag image using Git Commit SHA
+9. Push image to Amazon ECR
+10. Connect to EC2 using SSH
+11. Pull latest Docker image
+12. Replace the running container
+13. Execute application health check
+14. Send success or failure email notification
 
 ---
 
-## License
+## CI/CD Architecture
 
-MIT License
+```
+                Developer
+
+                     │
+              git push main
+
+                     │
+
+                     ▼
+
+          GitHub Actions Pipeline
+
+                     │
+
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+
+     Run Pytest             Docker Build
+
+                     │
+
+                     ▼
+
+              Push Image to ECR
+
+                     │
+
+                     ▼
+
+             SSH into EC2 Instance
+
+                     │
+
+                     ▼
+
+           Pull Latest Docker Image
+
+                     │
+
+                     ▼
+
+        Stop Existing Docker Container
+
+                     │
+
+                     ▼
+
+        Start New Docker Container
+
+                     │
+
+                     ▼
+
+           Execute /health Endpoint
+
+                     │
+
+         ┌───────────┴───────────┐
+         │                       │
+         ▼                       ▼
+
+   Success Email           Failure Email
+```
 
 ---
 
+## Docker Image
 
+The application is packaged as a Docker image.
 
+Docker image naming convention:
+
+```
+<ECR Repository>:<Git Commit SHA>
+```
+
+Using the commit SHA ensures every deployment is uniquely versioned and traceable.
+
+---
+
+## Health Check
+
+The application exposes the following endpoint:
+
+```
+/health
+```
+
+This endpoint is used after deployment to verify that the application is running successfully before the pipeline is marked as successful.
+
+---
+
+## Automated Testing
+
+Pytest is used as the testing framework.
+
+The following functionality is validated automatically during every pipeline execution:
+
+- Health endpoint
+- Home page
+- Add Student
+- Update Student
+- Delete Student
+
+The deployment process continues only if all tests pass successfully.
+
+---
+
+## Email Notifications
+
+The pipeline sends email notifications for both scenarios:
+
+### Success
+
+The email includes:
+
+- Branch name
+- Commit SHA
+- EC2 deployment target
+- Health check status
+- GitHub Actions run link
+
+### Failure
+
+The email includes:
+
+- Failed pipeline stage
+- Branch name
+- Commit SHA
+- GitHub Actions log link
+
+This helps identify deployment issues quickly.
+
+---
+
+## AWS Resources Used
+
+### Amazon EC2
+
+Hosts the Docker container running the Flask application.
+
+### Amazon ECR
+
+Stores Docker images built during every pipeline execution.
+
+### IAM
+
+Used for secure authentication between GitHub Actions and AWS services.
+
+---
+
+## GitHub Secrets
+
+The following repository secrets are configured:
+
+```
+AWS_ACCESS_KEY_ID
+
+AWS_SECRET_ACCESS_KEY
+
+AWS_REGION
+
+EC2_HOST
+
+EC2_SSH_KEY
+
+MONGO_URI
+
+FLASK_SECRET_KEY
+
+SMTP_USERNAME
+
+SMTP_PASSWORD
+
+EMAIL_TO
+```
+
+Sensitive information is never stored in the source code.
+
+---
+
+## Running the Application Locally
+
+Clone the repository:
+
+```bash
+git clone https://github.com/bkori17/flask_Practice.git
+
+cd flask_Practice
+```
+
+Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Configure the environment variables:
+
+```
+MONGO_URI=<MongoDB Atlas Connection String>
+
+SECRET_KEY=<Your Secret Key>
+```
+
+Run the application:
+
+```bash
+python app.py
+```
+
+Open:
+
+```
+http://localhost:5000
+```
+
+---
+
+## Running with Docker
+
+Build the Docker image:
+
+```bash
+docker build -t flask-practice .
+```
+
+Run the container:
+
+```bash
+docker run -d \
+-p 5000:5000 \
+--name flask-practice-container \
+-e MONGO_URI="<MongoDB URI>" \
+-e SECRET_KEY="<Secret Key>" \
+flask-practice
+```
+
+Application URL:
+
+```
+http://localhost:5000
+```
+
+---
+
+## Pipeline Validation
+
+The project was successfully validated by:
+
+- Executing all Pytest test cases
+- Building Docker image
+- Pushing image to Amazon ECR
+- Deploying updated container on EC2
+- Verifying deployment using `/health`
+- Receiving success email notification
+- Verifying pipeline failure using an intentionally failed execution
+- Receiving failure email notification
+
+---
+
+## Repository
+
+GitHub Repository:
+
+```
+https://github.com/bkori17/flask_Practice
+```
+
+---
+
+## Conclusion
+
+This project demonstrates a complete CI/CD implementation using GitHub Actions and AWS services. Every code change is automatically validated through testing, packaged into a Docker image, stored in Amazon ECR, deployed to Amazon EC2, verified using a health check, and reported through automated email notifications.
+
+This pipeline ensures consistent, repeatable, and reliable deployments while reducing manual intervention.
