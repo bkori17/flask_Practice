@@ -1,0 +1,12 @@
+https://github.com/bkori17/flask_Practice.git
+
+Please Referer
+
+1) DetailedPipelIne_Stages.png  ==> Detailed piple line
+2) Success_Email.png    ==> Successfull Deployment
+3) Failed_Email.png     ==> Failure of pipeline
+4) Intentionaly_Failed_Pipe_ImageBuilding.png  ==> Failed @image builing
+5) Screen_Shorts.dicx  ==> All Screen Shorts
+
+Core files in git repo  :app.py,test_app.py.Dockerfile,
+.github/workflows/ci-cd.yml, Readme.md
